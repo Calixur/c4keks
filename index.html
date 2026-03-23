@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>C4Keks Haushalt</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      padding: 20px;
+    }
+    h1 { color: #00ffaa; }
+    .card {
+      background: #1e1e1e;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🏠 Haushalt C&A</h1>
+
+<h2>💸 Ausgaben</h2>
+<div id="transactions"></div>
+
+<h2>🛒 Einkauf</h2>
+<div id="shopping"></div>
+
+<h2>💬 Chat</h2>
+<div id="chat"></div>
+
+<script>
+const supabaseUrl = "DEINE_URL_HIER";
+const supabaseKey = "DEIN_KEY_HIER";
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function loadData() {
+
+  const { data: transactions } = await supabaseClient.from("transactions").select("*");
+  const { data: shopping } = await supabaseClient.from("shopping_items").select("*");
+  const { data: chat } = await supabaseClient.from("chat_messages").select("*");
+
+  document.getElementById("transactions").innerHTML =
+    transactions.map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+
+  document.getElementById("shopping").innerHTML =
+    shopping.map(s => `<div class="card">${s.title}</div>`).join("");
+
+  document.getElementById("chat").innerHTML =
+    chat.map(c => `<div class="card">${c.message}</div>`).join("");
+}
+
+loadData();
+</script>
+
+</body>
+</html>

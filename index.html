@@ -193,12 +193,17 @@
 
       <div class="row">
         <input id="loginPassword" type="password" placeholder="Passwort" />
+        <div class="row hidden" id="newPasswordRow">
+  <input id="newPassword" type="password" placeholder="Neues Passwort eingeben" />
+  <button id="setNewPasswordBtn">Neues Passwort speichern</button>
+</div>
       </div>
 
       <div class="row">
-        <button id="loginBtn">Anmelden</button>
-        <button id="logoutBtnLogin" class="small-btn hidden">Logout</button>
-      </div>
+  <button id="loginBtn">Anmelden</button>
+  <button id="resetRequestBtn" class="small-btn">Passwort-Mail senden</button>
+  <button id="logoutBtnLogin" class="small-btn hidden">Logout</button>
+</div>
     </div>
 
     <div id="appView" class="hidden">
@@ -272,6 +277,11 @@
     const appView = document.getElementById("appView");
     const loginStatusEl = document.getElementById("loginStatus");
     const currentUserLabelEl = document.getElementById("currentUserLabel");
+
+    const resetRequestBtn = document.getElementById("resetRequestBtn");
+const newPasswordRow = document.getElementById("newPasswordRow");
+const newPasswordEl = document.getElementById("newPassword");
+const setNewPasswordBtn = document.getElementById("setNewPasswordBtn");
 
     const loginEmailEl = document.getElementById("loginEmail");
     const loginPasswordEl = document.getElementById("loginPassword");
@@ -617,10 +627,58 @@
     async function logout() {
       await supabase.auth.signOut();
     }
+    async function sendResetMail() {
+  const email = loginEmailEl.value.trim();
+
+  if (!email) {
+    setLoginStatus("Bitte zuerst die E-Mail eingeben.", "err");
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://calixur.github.io/c4keks/"
+  });
+
+  if (error) {
+    setLoginStatus("Reset-Mail konnte nicht gesendet werden: " + error.message, "err");
+    return;
+  }
+
+  setLoginStatus("Reset-Mail wurde gesendet. Bitte Mail öffnen.", "ok");
+}
+
+async function setNewPassword() {
+  const newPassword = newPasswordEl.value.trim();
+
+  if (!newPassword) {
+    setLoginStatus("Bitte neues Passwort eingeben.", "err");
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword
+  });
+
+  if (error) {
+    setLoginStatus("Neues Passwort konnte nicht gespeichert werden: " + error.message, "err");
+    return;
+  }
+
+  newPasswordEl.value = "";
+  newPasswordRow.classList.add("hidden");
+  setLoginStatus("Passwort erfolgreich geändert. Jetzt normal einloggen.", "ok");
+}
 
     async function handleSession() {
       const { data } = await supabase.auth.getSession();
       currentSession = data.session;
+      const hash = window.location.hash || "";
+if (hash.includes("type=recovery")) {
+  showLogin();
+  newPasswordRow.classList.remove("hidden");
+  setLoginStatus("Bitte jetzt ein neues Passwort eingeben.", "ok");
+  return;
+}
 
       if (!currentSession) {
         showLogin();
@@ -655,7 +713,11 @@
 
     chatMessageEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendChat();
+      
+      resetRequestBtn.addEventListener("click", sendResetMail);
+setNewPasswordBtn.addEventListener("click", setNewPassword);
     });
+
 
     const channel = supabase
       .channel("c4keks-live")

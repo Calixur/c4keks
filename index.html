@@ -360,7 +360,11 @@
       chatEl.innerHTML = chatCache.map(item => `
         <div class="card chat-card ${item.sender_id === currentUserId() ? "me" : "other"}">
           <strong>${USERS[item.sender_id] || "Unbekannt"}:</strong> ${item.message}
-          <div class="muted">${new Date(item.created_at).toLocaleString("de-DE")}</div>
+          <div class="muted">${new Date(item.created_at).toLocaleTimeString("de-DE", {
+  timeZone: "Europe/Berlin",
+  hour: "2-digit",
+  minute: "2-digit"
+})}</div>
         </div>
       `).join("");
 

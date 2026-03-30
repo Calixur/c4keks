@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>C4Keks Haushalt</title>
 
-
-
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #111;
       color: white;
       padding: 20px;
     }
-    h1 { color: #00ffaa; }
+
+    h1 {
+      color: #00ffaa;
+    }
+
     .card {
       background: #1e1e1e;
       padding: 15px;
@@ -25,62 +27,66 @@
 </head>
 <body>
 
-<h1>🏠 Haushalt C&A</h1>
+  <h1>🏠 Haushalt C&A</h1>
 
-<h2>💸 Ausgaben</h2>
-<div id="transactions"></div>
+  <h2>💸 Ausgaben</h2>
+  <div id="transactions"></div>
 
-<h2>🛒 Einkauf</h2>
-<div id="shopping"></div>
+  <h2>🛒 Einkauf</h2>
+  <div id="shopping"></div>
 
-<h2>💬 Chat</h2>
-<div id="chat"></div>
+  <h2>💬 Chat</h2>
+  <div id="chat"></div>
 
-<script>
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  const supabaseUrl = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
-  const supabaseKey = "sb_publishable_0jt5kJLO2Qi9uto5mVZU6g_vdbp3oV_";
+    const supabaseUrl = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
+    const supabaseKey = "sb_publishable_0jt5kJLO2Qi9uto5mVZU6g_vdbp3oV_";
+    const householdId = "67c484b6-e608-4d2c-a1cc-ee55af5340ea";
 
-  const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-  async function loadData() {
-    const { data: transactions, error: tError } = await supabaseClient
-      .from("transactions")
-      .select("*");
+    async function loadData() {
+      const { data: transactions, error: tError } = await supabaseClient
+        .from("transactions")
+        .select("*")
+        .eq("household_id", householdId);
 
-    const { data: shopping, error: sError } = await supabaseClient
-      .from("shopping_items")
-      .select("*");
+      const { data: shopping, error: sError } = await supabaseClient
+        .from("shopping_items")
+        .select("*")
+        .eq("household_id", householdId);
 
-    const { data: chat, error: cError } = await supabaseClient
-      .from("chat_messages")
-      .select("*");
+      const { data: chat, error: cError } = await supabaseClient
+        .from("chat_messages")
+        .select("*")
+        .eq("household_id", householdId);
 
-    if (tError || sError || cError) {
-      document.body.innerHTML += `
-        <div style="margin-top:20px;color:#ff8080;">
-          Fehler beim Laden der Daten.<br>
-          Transactions: ${tError ? tError.message : "ok"}<br>
-          Shopping: ${sError ? sError.message : "ok"}<br>
-          Chat: ${cError ? cError.message : "ok"}
-        </div>
-      `;
-      return;
+      if (tError || sError || cError) {
+        document.body.innerHTML += `
+          <div style="margin-top:20px;color:#ff8080;">
+            Fehler beim Laden der Daten.<br>
+            Transactions: ${tError ? tError.message : "ok"}<br>
+            Shopping: ${sError ? sError.message : "ok"}<br>
+            Chat: ${cError ? cError.message : "ok"}
+          </div>
+        `;
+        return;
+      }
+
+      document.getElementById("transactions").innerHTML =
+        (transactions || []).map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+
+      document.getElementById("shopping").innerHTML =
+        (shopping || []).map(s => `<div class="card">${s.title}</div>`).join("");
+
+      document.getElementById("chat").innerHTML =
+        (chat || []).map(c => `<div class="card">${c.message}</div>`).join("");
     }
 
-    document.getElementById("transactions").innerHTML =
-      (transactions || []).map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+    loadData();
+  </script>
 
-    document.getElementById("shopping").innerHTML =
-      (shopping || []).map(s => `<div class="card">${s.title}</div>`).join("");
-
-    document.getElementById("chat").innerHTML =
-      (chat || []).map(c => `<div class="card">${c.message}</div>`).join("");
-  }
-
-  loadData();
-</script>
-
-
+</body>
+</html>

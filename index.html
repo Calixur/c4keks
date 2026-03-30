@@ -222,6 +222,12 @@
     };
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    supabase
+  .channel("realtime")
+  .on("postgres_changes", { event: "*", schema: "public" }, payload => {
+    loadAll();
+  })
+  .subscribe();
 
     const statusEl = document.getElementById("status");
     const activeUserEl = document.getElementById("activeUser");

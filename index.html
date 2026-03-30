@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>C4Keks Haushalt</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 
   <style>
     body {
@@ -37,27 +37,51 @@
 <div id="chat"></div>
 
 <script>
-const supabaseUrl = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
-const supabaseKey = "sb_publishable_n7atLnfNWg_PcHzVoBUN5g_ziWulUHP";
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
+  const supabaseKey = "sb_publishable_0jt5kJLO2Qi9uto5mVZU6g_vdbp3oV_";
 
-async function loadData() {
+  const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-  const { data: transactions } = await supabaseClient.from("transactions").select("*");
-  const { data: shopping } = await supabaseClient.from("shopping_items").select("*");
-  const { data: chat } = await supabaseClient.from("chat_messages").select("*");
+  async function loadData() {
+    const { data: transactions, error: tError } = await supabaseClient
+      .from("transactions")
+      .select("*");
 
-  document.getElementById("transactions").innerHTML =
-    transactions.map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+    const { data: shopping, error: sError } = await supabaseClient
+      .from("shopping_items")
+      .select("*");
 
-  document.getElementById("shopping").innerHTML =
-    shopping.map(s => `<div class="card">${s.title}</div>`).join("");
+    const { data: chat, error: cError } = await supabaseClient
+      .from("chat_messages")
+      .select("*");
 
-  document.getElementById("chat").innerHTML =
-    chat.map(c => `<div class="card">${c.message}</div>`).join("");
-}
+    if (tError || sError || cError) {
+      document.body.innerHTML += `
+        <div style="margin-top:20px;color:#ff8080;">
+          Fehler beim Laden der Daten.<br>
+          Transactions: ${tError ? tError.message : "ok"}<br>
+          Shopping: ${sError ? sError.message : "ok"}<br>
+          Chat: ${cError ? cError.message : "ok"}
+        </div>
+      `;
+      return;
+    }
 
+    document.getElementById("transactions").innerHTML =
+      (transactions || []).map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+
+    document.getElementById("shopping").innerHTML =
+      (shopping || []).map(s => `<div class="card">${s.title}</div>`).join("");
+
+    document.getElementById("chat").innerHTML =
+      (chat || []).map(c => `<div class="card">${c.message}</div>`).join("");
+  }
+
+  loadData();
+</script>
 loadData();
 </script>
 

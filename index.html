@@ -399,16 +399,17 @@
         type: "expense",
         created_by: currentUserId()
       });
-
+await loadAll();
       if (error) {
         setStatus("Ausgabe konnte nicht gespeichert werden: " + error.message, "err");
         return;
       }
 
       transactionTitleEl.value = "";
-      transactionAmountEl.value = "";
-      transactionTitleEl.focus();
-      setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
+transactionAmountEl.value = "";
+transactionTitleEl.focus();
+await loadAll();
+setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
     }
 
     async function addShopping() {
@@ -433,6 +434,7 @@
 
       shoppingTitleEl.value = "";
       shoppingTitleEl.focus();
+      await loadAll();
       setStatus(`Artikel von ${currentUserName()} hinzugefügt.`);
     }
 
@@ -457,6 +459,7 @@
 
       chatMessageEl.value = "";
       chatMessageEl.focus();
+      await loadAll();
       setStatus(`Nachricht von ${currentUserName()} gesendet.`);
     }
 
@@ -470,7 +473,7 @@
         setStatus("Artikel konnte nicht geändert werden: " + error.message, "err");
         return;
       }
-
+await loadAll();
       setStatus("Einkaufszettel aktualisiert.");
     }
 
@@ -484,7 +487,7 @@
         setStatus("Artikel konnte nicht gelöscht werden: " + error.message, "err");
         return;
       }
-
+await loadAll();
       setStatus("Artikel gelöscht.");
     }
 

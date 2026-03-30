@@ -37,7 +37,7 @@
       margin-bottom: 12px;
     }
 
-    input, select, button {
+    input, button {
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #333;
@@ -46,7 +46,7 @@
       font-size: 14px;
     }
 
-    input, select {
+    input {
       flex: 1;
       min-width: 180px;
     }
@@ -121,8 +121,7 @@
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
-   
-  }
+    }
 
     .summary-card {
       background: #1a1a1a;
@@ -194,17 +193,17 @@
 
       <div class="row">
         <input id="loginPassword" type="password" placeholder="Passwort" />
-        <div class="row hidden" id="newPasswordRow">
-  <input id="newPassword" type="password" placeholder="Neues Passwort eingeben" />
-  <button id="setNewPasswordBtn">Neues Passwort speichern</button>
-</div>
+      </div>
+
+      <div class="row hidden" id="newPasswordRow">
+        <input id="newPassword" type="password" placeholder="Neues Passwort eingeben" />
+        <button id="setNewPasswordBtn">Neues Passwort speichern</button>
       </div>
 
       <div class="row">
-  <button id="loginBtn">Anmelden</button>
-  <button id="resetRequestBtn" class="small-btn">Passwort-Mail senden</button>
-  <button id="logoutBtnLogin" class="small-btn hidden">Logout</button>
-</div>
+        <button id="loginBtn">Anmelden</button>
+        <button id="resetRequestBtn" class="small-btn">Passwort-Mail senden</button>
+      </div>
     </div>
 
     <div id="appView" class="hidden">
@@ -268,8 +267,8 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    const SUPABASE_URL = "HIER_DEINE_SUPABASE_URL";
-    const SUPABASE_KEY = "HIER_DEIN_ANON_ODER_PUBLISHABLE_KEY";
+    const SUPABASE_URL = "https://calixur.github.io/c4keks/";
+    const SUPABASE_KEY = "sb_publishable_n7atLnfNWg_PcHzVoBUN5g_ziWulUHP";
     const HOUSEHOLD_ID = "67c484b6-e608-4d2c-a1cc-ee55af5340ea";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -279,16 +278,15 @@
     const loginStatusEl = document.getElementById("loginStatus");
     const currentUserLabelEl = document.getElementById("currentUserLabel");
 
-    const resetRequestBtn = document.getElementById("resetRequestBtn");
-const newPasswordRow = document.getElementById("newPasswordRow");
-const newPasswordEl = document.getElementById("newPassword");
-const setNewPasswordBtn = document.getElementById("setNewPasswordBtn");
-
     const loginEmailEl = document.getElementById("loginEmail");
     const loginPasswordEl = document.getElementById("loginPassword");
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
-    const logoutBtnLogin = document.getElementById("logoutBtnLogin");
+
+    const resetRequestBtn = document.getElementById("resetRequestBtn");
+    const newPasswordRow = document.getElementById("newPasswordRow");
+    const newPasswordEl = document.getElementById("newPassword");
+    const setNewPasswordBtn = document.getElementById("setNewPasswordBtn");
 
     const statusEl = document.getElementById("status");
     const transactionTitleEl = document.getElementById("transactionTitle");
@@ -628,58 +626,60 @@ const setNewPasswordBtn = document.getElementById("setNewPasswordBtn");
     async function logout() {
       await supabase.auth.signOut();
     }
+
     async function sendResetMail() {
-  const email = loginEmailEl.value.trim();
+      const email = loginEmailEl.value.trim();
 
-  if (!email) {
-    setLoginStatus("Bitte zuerst die E-Mail eingeben.", "err");
-    return;
-  }
+      if (!email) {
+        setLoginStatus("Bitte zuerst die E-Mail eingeben.", "err");
+        return;
+      }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://calixur.github.io/c4keks/"
-  });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://calixur.github.io/c4keks/"
+      });
 
-  if (error) {
-    setLoginStatus("Reset-Mail konnte nicht gesendet werden: " + error.message, "err");
-    return;
-  }
+      if (error) {
+        setLoginStatus("Reset-Mail konnte nicht gesendet werden: " + error.message, "err");
+        return;
+      }
 
-  setLoginStatus("Reset-Mail wurde gesendet. Bitte Mail öffnen.", "ok");
-}
+      setLoginStatus("Reset-Mail wurde gesendet. Bitte Mail öffnen.", "ok");
+    }
 
-async function setNewPassword() {
-  const newPassword = newPasswordEl.value.trim();
+    async function setNewPassword() {
+      const newPassword = newPasswordEl.value.trim();
 
-  if (!newPassword) {
-    setLoginStatus("Bitte neues Passwort eingeben.", "err");
-    return;
-  }
+      if (!newPassword) {
+        setLoginStatus("Bitte neues Passwort eingeben.", "err");
+        return;
+      }
 
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword
-  });
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
-  if (error) {
-    setLoginStatus("Neues Passwort konnte nicht gespeichert werden: " + error.message, "err");
-    return;
-  }
+      if (error) {
+        setLoginStatus("Neues Passwort konnte nicht gespeichert werden: " + error.message, "err");
+        return;
+      }
 
-  newPasswordEl.value = "";
-  newPasswordRow.classList.add("hidden");
-  setLoginStatus("Passwort erfolgreich geändert. Jetzt normal einloggen.", "ok");
-}
+      newPasswordEl.value = "";
+      newPasswordRow.classList.add("hidden");
+      setLoginStatus("Passwort erfolgreich geändert. Jetzt normal einloggen.", "ok");
+    }
 
     async function handleSession() {
       const { data } = await supabase.auth.getSession();
       currentSession = data.session;
+
       const hash = window.location.hash || "";
-if (hash.includes("type=recovery")) {
-  showLogin();
-  newPasswordRow.classList.remove("hidden");
-  setLoginStatus("Bitte jetzt ein neues Passwort eingeben.", "ok");
-  return;
-}
+      if (hash.includes("type=recovery")) {
+        showLogin();
+        newPasswordRow.classList.remove("hidden");
+        setLoginStatus("Bitte jetzt ein neues Passwort eingeben.", "ok");
+        return;
+      }
 
       if (!currentSession) {
         showLogin();
@@ -694,10 +694,15 @@ if (hash.includes("type=recovery")) {
 
     loginBtn.addEventListener("click", login);
     logoutBtn.addEventListener("click", logout);
-    logoutBtnLogin.addEventListener("click", logout);
+    resetRequestBtn.addEventListener("click", sendResetMail);
+    setNewPasswordBtn.addEventListener("click", setNewPassword);
 
     loginPasswordEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") login();
+    });
+
+    newPasswordEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") setNewPassword();
     });
 
     transactionTitleEl.addEventListener("keydown", (e) => {
@@ -714,13 +719,9 @@ if (hash.includes("type=recovery")) {
 
     chatMessageEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendChat();
-      
-      resetRequestBtn.addEventListener("click", sendResetMail);
-setNewPasswordBtn.addEventListener("click", setNewPassword);
     });
 
-
-    const channel = supabase
+    supabase
       .channel("c4keks-live")
       .on("postgres_changes", {
         event: "*",
@@ -739,7 +740,16 @@ setNewPasswordBtn.addEventListener("click", setNewPassword);
       }, loadAll)
       .subscribe();
 
-    supabase.auth.onAuthStateChange(async () => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      currentSession = session;
+
+      if (event === "PASSWORD_RECOVERY") {
+        showLogin();
+        newPasswordRow.classList.remove("hidden");
+        setLoginStatus("Bitte jetzt ein neues Passwort eingeben.", "ok");
+        return;
+      }
+
       await handleSession();
     });
 

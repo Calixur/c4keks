@@ -148,89 +148,138 @@
     .chat-card.other {
       border-left: 4px solid #555;
     }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .login-box {
+      max-width: 460px;
+      margin: 60px auto;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .login-box h1 {
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+
+    .login-box .row {
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>🏠 Haushalt C&A</h1>
 
-    <div id="status"></div>
+    <div id="loginView" class="login-box">
+      <h1>🔐 C4Keks Login</h1>
+      <div id="loginStatus"></div>
 
-    <div class="summary">
-      <div class="summary-card">
-        <div class="label">Ausgaben gesamt</div>
-        <div class="value" id="sumTransactions">0,00€</div>
+      <div class="row">
+        <input id="loginEmail" type="email" placeholder="E-Mail" />
       </div>
-      <div class="summary-card">
-        <div class="label">Offene Einkaufsartikel</div>
-        <div class="value" id="openShopping">0</div>
+
+      <div class="row">
+        <input id="loginPassword" type="password" placeholder="Passwort" />
       </div>
-      <div class="summary-card">
-        <div class="label">Letzte Chatnachricht</div>
-        <div class="value" id="lastChat">–</div>
+
+      <div class="row">
+        <button id="loginBtn">Anmelden</button>
+        <button id="logoutBtnLogin" class="small-btn hidden">Logout</button>
       </div>
     </div>
 
-    <div class="row">
-      <select id="activeUser">
-        <option value="bb943bc2-75c6-4c79-9368-dab491eba2e7">Anna</option>
-        <option value="ec892c1d-4a7a-456b-aa2b-a6dd26dbf0bb">Christoph</option>
-      </select>
+    <div id="appView" class="hidden">
+      <div class="topbar">
+        <h1>🏠 Haushalt C&A</h1>
+        <div>
+          <span id="currentUserLabel" class="muted"></span>
+          <button id="logoutBtn" class="small-btn">Logout</button>
+        </div>
+      </div>
+
+      <div id="status"></div>
+
+      <div class="summary">
+        <div class="summary-card">
+          <div class="label">Ausgaben gesamt</div>
+          <div class="value" id="sumTransactions">0,00€</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Offene Einkaufsartikel</div>
+          <div class="value" id="openShopping">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Letzte Chatnachricht</div>
+          <div class="value" id="lastChat">–</div>
+        </div>
+      </div>
+
+      <h2>💸 Ausgabe hinzufügen</h2>
+      <div class="row">
+        <input id="transactionTitle" placeholder="Titel, z. B. Einkauf Rewe" />
+        <input id="transactionAmount" type="number" step="0.01" placeholder="Betrag" />
+        <button id="addTransactionBtn">Speichern</button>
+      </div>
+
+      <h2>🛒 Einkauf hinzufügen</h2>
+      <div class="row">
+        <input id="shoppingTitle" placeholder="Artikel, z. B. Milch" />
+        <button id="addShoppingBtn">Hinzufügen</button>
+      </div>
+
+      <h2>💬 Chat senden</h2>
+      <div class="row">
+        <input id="chatMessage" placeholder="Nachricht schreiben..." />
+        <button id="sendChatBtn">Senden</button>
+      </div>
+
+      <hr />
+
+      <h2>💸 Ausgaben</h2>
+      <div id="transactions"></div>
+
+      <h2>🛒 Einkauf</h2>
+      <div id="shopping"></div>
+
+      <h2>💬 Chat</h2>
+      <div id="chat"></div>
     </div>
-
-    <h2>💸 Ausgabe hinzufügen</h2>
-    <div class="row">
-      <input id="transactionTitle" placeholder="Titel, z. B. Einkauf Rewe" />
-      <input id="transactionAmount" type="number" step="0.01" placeholder="Betrag" />
-      <button id="addTransactionBtn">Speichern</button>
-    </div>
-
-    <h2>🛒 Einkauf hinzufügen</h2>
-    <div class="row">
-      <input id="shoppingTitle" placeholder="Artikel, z. B. Milch" />
-      <button id="addShoppingBtn">Hinzufügen</button>
-    </div>
-
-    <h2>💬 Chat senden</h2>
-    <div class="row">
-      <input id="chatMessage" placeholder="Nachricht schreiben..." />
-      <button id="sendChatBtn">Senden</button>
-    </div>
-
-    <hr />
-
-    <h2>💸 Ausgaben</h2>
-    <div id="transactions"></div>
-
-    <h2>🛒 Einkauf</h2>
-    <div id="shopping"></div>
-
-    <h2>💬 Chat</h2>
-    <div id="chat"></div>
   </div>
 
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    const SUPABASE_URL = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ldGZ1eHdmd2txa3Bjc2ZzZmt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMzc2NTYsImV4cCI6MjA4OTgxMzY1Nn0.5-YJNH5AP9YWwHqxRg296HxM3YY_Qqf_mVF8TNn-WUo";
+    const SUPABASE_URL = "HIER_DEINE_SUPABASE_URL";
+    const SUPABASE_KEY = "HIER_DEIN_ANON_ODER_PUBLISHABLE_KEY";
     const HOUSEHOLD_ID = "67c484b6-e608-4d2c-a1cc-ee55af5340ea";
 
-    const USERS = {
-      "bb943bc2-75c6-4c79-9368-dab491eba2e7": "Anna",
-      "ec892c1d-4a7a-456b-aa2b-a6dd26dbf0bb": "Christoph"
-    };
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    supabase
-  .channel("realtime")
-  .on("postgres_changes", { event: "*", schema: "public" }, payload => {
-    loadAll();
-  })
-  .subscribe();
+
+    const loginView = document.getElementById("loginView");
+    const appView = document.getElementById("appView");
+    const loginStatusEl = document.getElementById("loginStatus");
+    const currentUserLabelEl = document.getElementById("currentUserLabel");
+
+    const loginEmailEl = document.getElementById("loginEmail");
+    const loginPasswordEl = document.getElementById("loginPassword");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const logoutBtnLogin = document.getElementById("logoutBtnLogin");
 
     const statusEl = document.getElementById("status");
-    const activeUserEl = document.getElementById("activeUser");
     const transactionTitleEl = document.getElementById("transactionTitle");
     const transactionAmountEl = document.getElementById("transactionAmount");
     const shoppingTitleEl = document.getElementById("shoppingTitle");
@@ -244,16 +293,19 @@
     const openShoppingEl = document.getElementById("openShopping");
     const lastChatEl = document.getElementById("lastChat");
 
+    let currentSession = null;
+    let currentProfileName = "Unbekannt";
+
     let transactionsCache = [];
     let shoppingCache = [];
     let chatCache = [];
 
-    function currentUserId() {
-      return activeUserEl.value;
-    }
-
-    function currentUserName() {
-      return USERS[currentUserId()] || "Unbekannt";
+    function setLoginStatus(message, type = "err") {
+      if (!message) {
+        loginStatusEl.innerHTML = "";
+        return;
+      }
+      loginStatusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
     }
 
     function setStatus(message, type = "ok") {
@@ -264,6 +316,38 @@
       statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
     }
 
+    function currentUserId() {
+      return currentSession?.user?.id || null;
+    }
+
+    function currentUserName() {
+      return currentProfileName || "Unbekannt";
+    }
+
+    async function fetchProfileName() {
+      const userId = currentUserId();
+      if (!userId) return "Unbekannt";
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+
+      if (error || !data) return "Unbekannt";
+      return data.display_name || "Unbekannt";
+    }
+
+    function showLogin() {
+      loginView.classList.remove("hidden");
+      appView.classList.add("hidden");
+    }
+
+    function showApp() {
+      loginView.classList.add("hidden");
+      appView.classList.remove("hidden");
+    }
+
     function updateSummary() {
       const total = transactionsCache.reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const openItems = shoppingCache.filter(item => !item.is_done).length;
@@ -271,7 +355,7 @@
 
       sumTransactionsEl.textContent = `${total.toFixed(2).replace(".", ",")}€`;
       openShoppingEl.textContent = String(openItems);
-      lastChatEl.textContent = latestChat ? `${USERS[latestChat.sender_id] || "?"}: ${latestChat.message}` : "–";
+      lastChatEl.textContent = latestChat ? `${latestChat.sender_name || "?"}: ${latestChat.message}` : "–";
     }
 
     async function loadTransactions() {
@@ -291,7 +375,7 @@
             <strong>${item.title}</strong>
             <span>-${Number(item.amount).toFixed(2).replace(".", ",")}€</span>
           </div>
-          <div class="muted">von ${USERS[item.created_by] || "Unbekannt"}</div>
+          <div class="muted">von ${item.created_by === currentUserId() ? currentUserName() : "Anderer Nutzer"}</div>
         </div>
       `).join("");
 
@@ -318,7 +402,7 @@
           <div class="line">
             <div>
               <strong class="${item.is_done ? "done" : ""}">${item.title}</strong>
-              <div class="muted">von ${USERS[item.added_by] || "Unbekannt"}</div>
+              <div class="muted">von ${item.added_by === currentUserId() ? currentUserName() : "Anderer Nutzer"}</div>
             </div>
             <div class="row" style="margin:0;">
               <button class="small-btn" data-toggle="${item.id}" data-done="${item.is_done ? "0" : "1"}">
@@ -361,18 +445,21 @@
 
       if (error) throw new Error("Chat: " + error.message);
 
-      chatCache = data || [];
+      chatCache = (data || []).map(item => ({
+        ...item,
+        sender_name: item.sender_id === currentUserId() ? currentUserName() : "Anderer Nutzer"
+      }));
 
       chatEl.innerHTML = chatCache.map(item => `
         <div class="card chat-card ${item.sender_id === currentUserId() ? "me" : "other"}">
-          <strong>${USERS[item.sender_id] || "Unbekannt"}:</strong> ${item.message}
-<div class="muted">${new Date(new Date(item.created_at).getTime() + 2 * 60 * 60 * 1000).toLocaleString("de-DE", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit"
-})}</div>
+          <strong>${item.sender_name}:</strong> ${item.message}
+          <div class="muted">${new Date(new Date(item.created_at).getTime() + 2 * 60 * 60 * 1000).toLocaleString("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          })}</div>
         </div>
       `).join("");
 
@@ -411,17 +498,17 @@
         type: "expense",
         created_by: currentUserId()
       });
-await loadAll();
+
       if (error) {
         setStatus("Ausgabe konnte nicht gespeichert werden: " + error.message, "err");
         return;
       }
 
       transactionTitleEl.value = "";
-transactionAmountEl.value = "";
-transactionTitleEl.focus();
-await loadAll();
-setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
+      transactionAmountEl.value = "";
+      transactionTitleEl.focus();
+      await loadAll();
+      setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
     }
 
     async function addShopping() {
@@ -485,7 +572,8 @@ setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
         setStatus("Artikel konnte nicht geändert werden: " + error.message, "err");
         return;
       }
-await loadAll();
+
+      await loadAll();
       setStatus("Einkaufszettel aktualisiert.");
     }
 
@@ -499,13 +587,59 @@ await loadAll();
         setStatus("Artikel konnte nicht gelöscht werden: " + error.message, "err");
         return;
       }
-await loadAll();
+
+      await loadAll();
       setStatus("Artikel gelöscht.");
     }
 
-    document.getElementById("addTransactionBtn").addEventListener("click", addTransaction);
-    document.getElementById("addShoppingBtn").addEventListener("click", addShopping);
-    document.getElementById("sendChatBtn").addEventListener("click", sendChat);
+    async function login() {
+      const email = loginEmailEl.value.trim();
+      const password = loginPasswordEl.value;
+
+      if (!email || !password) {
+        setLoginStatus("Bitte E-Mail und Passwort eingeben.", "err");
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        setLoginStatus("Login fehlgeschlagen: " + error.message, "err");
+        return;
+      }
+
+      setLoginStatus("");
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+    }
+
+    async function handleSession() {
+      const { data } = await supabase.auth.getSession();
+      currentSession = data.session;
+
+      if (!currentSession) {
+        showLogin();
+        return;
+      }
+
+      currentProfileName = await fetchProfileName();
+      currentUserLabelEl.textContent = `Angemeldet als: ${currentProfileName}`;
+      showApp();
+      await loadAll();
+    }
+
+    loginBtn.addEventListener("click", login);
+    logoutBtn.addEventListener("click", logout);
+    logoutBtnLogin.addEventListener("click", logout);
+
+    loginPasswordEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") login();
+    });
 
     transactionTitleEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addTransaction();
@@ -521,10 +655,6 @@ await loadAll();
 
     chatMessageEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendChat();
-    });
-
-    activeUserEl.addEventListener("change", () => {
-      loadChat();
     });
 
     const channel = supabase
@@ -546,7 +676,11 @@ await loadAll();
       }, loadAll)
       .subscribe();
 
-    loadAll();
+    supabase.auth.onAuthStateChange(async () => {
+      await handleSession();
+    });
+
+    handleSession();
   </script>
 </body>
 </html>

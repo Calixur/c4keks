@@ -17,13 +17,13 @@
     }
 
     .wrap {
-      max-width: 900px;
+      max-width: 980px;
       margin: 0 auto;
     }
 
     h1 {
       color: #00ffaa;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     h2 {
@@ -115,6 +115,39 @@
       border-top: 1px solid #333;
       margin: 24px 0;
     }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .summary-card .label {
+      color: #aaa;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .value {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .chat-card.me {
+      border-left: 4px solid #00aa88;
+    }
+
+    .chat-card.other {
+      border-left: 4px solid #555;
+    }
   </style>
 </head>
 <body>
@@ -122,6 +155,21 @@
     <h1>🏠 Haushalt C&A</h1>
 
     <div id="status"></div>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="label">Ausgaben gesamt</div>
+        <div class="value" id="sumTransactions">0,00€</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Offene Einkaufsartikel</div>
+        <div class="value" id="openShopping">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Letzte Chatnachricht</div>
+        <div class="value" id="lastChat">–</div>
+      </div>
+    </div>
 
     <div class="row">
       <select id="activeUser">
@@ -186,6 +234,14 @@
     const shoppingEl = document.getElementById("shopping");
     const chatEl = document.getElementById("chat");
 
+    const sumTransactionsEl = document.getElementById("sumTransactions");
+    const openShoppingEl = document.getElementById("openShopping");
+    const lastChatEl = document.getElementById("lastChat");
+
+    let transactionsCache = [];
+    let shoppingCache = [];
+    let chatCache = [];
+
     function currentUserId() {
       return activeUserEl.value;
     }
@@ -202,6 +258,16 @@
       statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
     }
 
+    function updateSummary() {
+      const total = transactionsCache.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const openItems = shoppingCache.filter(item => !item.is_done).length;
+      const latestChat = chatCache.length > 0 ? chatCache[0] : null;
+
+      sumTransactionsEl.textContent = `${total.toFixed(2).replace(".", ",")}€`;
+      openShoppingEl.textContent = String(openItems);
+      lastChatEl.textContent = latestChat ? `${USERS[latestChat.sender_id] || "?"}: ${latestChat.message}` : "–";
+    }
+
     async function loadTransactions() {
       const { data, error } = await supabase
         .from("transactions")
@@ -211,17 +277,19 @@
 
       if (error) throw new Error("Ausgaben: " + error.message);
 
-      transactionsEl.innerHTML = (data || []).map(item => `
+      transactionsCache = data || [];
+
+      transactionsEl.innerHTML = transactionsCache.map(item => `
         <div class="card">
           <div class="line">
             <strong>${item.title}</strong>
-            <span>-${Number(item.amount).toFixed(2)}€</span>
+            <span>-${Number(item.amount).toFixed(2).replace(".", ",")}€</span>
           </div>
           <div class="muted">von ${USERS[item.created_by] || "Unbekannt"}</div>
         </div>
       `).join("");
 
-      if (!data || data.length === 0) {
+      if (transactionsCache.length === 0) {
         transactionsEl.innerHTML = `<div class="card">Noch keine Ausgaben vorhanden.</div>`;
       }
     }
@@ -230,12 +298,16 @@
       const { data, error } = await supabase
         .from("shopping_items")
         .select("*")
-        .eq("household_id", HOUSEHOLD_ID)
-        .order("created_at", { ascending: false });
+        .eq("household_id", HOUSEHOLD_ID);
 
       if (error) throw new Error("Einkauf: " + error.message);
 
-      shoppingEl.innerHTML = (data || []).map(item => `
+      shoppingCache = (data || []).sort((a, b) => {
+        if (a.is_done === b.is_done) return String(b.id).localeCompare(String(a.id));
+        return a.is_done - b.is_done;
+      });
+
+      shoppingEl.innerHTML = shoppingCache.map(item => `
         <div class="card">
           <div class="line">
             <div>
@@ -254,7 +326,7 @@
         </div>
       `).join("");
 
-      if (!data || data.length === 0) {
+      if (shoppingCache.length === 0) {
         shoppingEl.innerHTML = `<div class="card">Noch keine Artikel vorhanden.</div>`;
       }
 
@@ -283,14 +355,16 @@
 
       if (error) throw new Error("Chat: " + error.message);
 
-      chatEl.innerHTML = (data || []).map(item => `
-        <div class="card">
+      chatCache = data || [];
+
+      chatEl.innerHTML = chatCache.map(item => `
+        <div class="card chat-card ${item.sender_id === currentUserId() ? "me" : "other"}">
           <strong>${USERS[item.sender_id] || "Unbekannt"}:</strong> ${item.message}
           <div class="muted">${new Date(item.created_at).toLocaleString("de-DE")}</div>
         </div>
       `).join("");
 
-      if (!data || data.length === 0) {
+      if (chatCache.length === 0) {
         chatEl.innerHTML = `<div class="card">Noch keine Nachrichten vorhanden.</div>`;
       }
     }
@@ -303,6 +377,7 @@
           loadShopping(),
           loadChat()
         ]);
+        updateSummary();
       } catch (err) {
         setStatus(err.message, "err");
       }
@@ -332,7 +407,7 @@
 
       transactionTitleEl.value = "";
       transactionAmountEl.value = "";
-      await loadTransactions();
+      transactionTitleEl.focus();
       setStatus(`Ausgabe von ${currentUserName()} gespeichert.`);
     }
 
@@ -357,7 +432,7 @@
       }
 
       shoppingTitleEl.value = "";
-      await loadShopping();
+      shoppingTitleEl.focus();
       setStatus(`Artikel von ${currentUserName()} hinzugefügt.`);
     }
 
@@ -381,7 +456,7 @@
       }
 
       chatMessageEl.value = "";
-      await loadChat();
+      chatMessageEl.focus();
       setStatus(`Nachricht von ${currentUserName()} gesendet.`);
     }
 
@@ -396,7 +471,6 @@
         return;
       }
 
-      await loadShopping();
       setStatus("Einkaufszettel aktualisiert.");
     }
 
@@ -411,13 +485,16 @@
         return;
       }
 
-      await loadShopping();
       setStatus("Artikel gelöscht.");
     }
 
     document.getElementById("addTransactionBtn").addEventListener("click", addTransaction);
     document.getElementById("addShoppingBtn").addEventListener("click", addShopping);
     document.getElementById("sendChatBtn").addEventListener("click", sendChat);
+
+    transactionTitleEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addTransaction();
+    });
 
     transactionAmountEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addTransaction();
@@ -430,6 +507,29 @@
     chatMessageEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") sendChat();
     });
+
+    activeUserEl.addEventListener("change", () => {
+      loadChat();
+    });
+
+    const channel = supabase
+      .channel("c4keks-live")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "transactions"
+      }, loadAll)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "shopping_items"
+      }, loadAll)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "chat_messages"
+      }, loadAll)
+      .subscribe();
 
     loadAll();
   </script>

@@ -2,91 +2,389 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>C4Keks Haushalt</title>
-
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #111;
       color: white;
       padding: 20px;
+      margin: 0;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
     }
 
     h1 {
       color: #00ffaa;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      margin-top: 28px;
+      margin-bottom: 12px;
     }
 
     .card {
       background: #1e1e1e;
-      padding: 15px;
+      padding: 14px;
       margin-bottom: 10px;
       border-radius: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    input, select, button {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #181818;
+      color: white;
+      font-size: 14px;
+    }
+
+    input, select {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #00aa88;
+      border: none;
+      font-weight: bold;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    .small-btn {
+      padding: 8px 10px;
+      font-size: 12px;
+      background: #333;
+    }
+
+    .line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .muted {
+      color: #aaa;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .done {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .error {
+      background: #3a1717;
+      color: #ffb0b0;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      white-space: pre-line;
+    }
+
+    .ok {
+      background: #123124;
+      color: #b7ffd6;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>🏠 Haushalt C&A</h1>
 
-  <h1>🏠 Haushalt C&A</h1>
+    <div id="status"></div>
+    <div class="row">
+      <select id="activeUser">
+        <option value="bb943bc2-75c6-4c79-9368-dab491eba2e7">Anna</option>
+        <option value="ec892c1d-4a7a-456b-aa2b-a6dd26dbf0bb">Christoph</option>
+      </select>
+    </div>
 
-  <h2>💸 Ausgaben</h2>
-  <div id="transactions"></div>
+    <h2>💸 Ausgaben</h2>
+    <div class="row">
+      <input id="transactionTitle" placeholder="Titel, z. B. Einkauf Rewe" />
+      <input id="transactionAmount" type="number" step="0.01" placeholder="Betrag" />
+      <button id="addTransactionBtn">Ausgabe speichern</button>
+    </div>
+    <div id="transactions"></div>
 
-  <h2>🛒 Einkauf</h2>
-  <div id="shopping"></div>
+    <h2>🛒 Einkauf</h2>
+    <div class="row">
+      <input id="shoppingTitle" placeholder="Artikel, z. B. Milch" />
+      <button id="addShoppingBtn">Artikel hinzufügen</button>
+    </div>
+    <div id="shopping"></div>
 
-  <h2>💬 Chat</h2>
-  <div id="chat"></div>
+    <h2>💬 Chat</h2>
+    <div class="row">
+      <input id="chatMessage" placeholder="Nachricht schreiben..." />
+      <button id="sendChatBtn">Senden</button>
+    </div>
+    <div id="chat"></div>
+  </div>
 
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
     const supabaseUrl = "https://metfuxwfwkqkpcsfsfkw.supabase.co";
-    const supabaseKey = "sb_publishable_0jt5kJLO2Qi9uto5mVZU6g_vdbp3oV_";
+    const supabaseKey = "DEIN_ANON_KEY_HIER";
     const householdId = "67c484b6-e608-4d2c-a1cc-ee55af5340ea";
 
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    const USERS = {
+      "bb943bc2-75c6-4c79-9368-dab491eba2e7": "Anna",
+      "ec892c1d-4a7a-456b-aa2b-a6dd26dbf0bb": "Christoph"
+    };
 
-    async function loadData() {
-      const { data: transactions, error: tError } = await supabaseClient
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const statusEl = document.getElementById("status");
+    const activeUserEl = document.getElementById("activeUser");
+
+    const transactionTitleEl = document.getElementById("transactionTitle");
+    const transactionAmountEl = document.getElementById("transactionAmount");
+    const shoppingTitleEl = document.getElementById("shoppingTitle");
+    const chatMessageEl = document.getElementById("chatMessage");
+
+    const transactionsEl = document.getElementById("transactions");
+    const shoppingEl = document.getElementById("shopping");
+    const chatEl = document.getElementById("chat");
+
+    function currentUserId() {
+      return activeUserEl.value;
+    }
+
+    function currentUserName() {
+      return USERS[currentUserId()] || "Unbekannt";
+    }
+
+    function setStatus(message, isError = false) {
+      statusEl.innerHTML = message
+        ? `<div class="${isError ? "error" : "ok"}">${message}</div>`
+        : "";
+    }
+
+    async function loadTransactions() {
+      const { data, error } = await supabase
         .from("transactions")
         .select("*")
-        .eq("household_id", householdId);
+        .eq("household_id", householdId)
+        .order("created_at", { ascending: false });
 
-      const { data: shopping, error: sError } = await supabaseClient
+      if (error) throw new Error("Transactions: " + error.message);
+
+      transactionsEl.innerHTML = (data || []).map(item => `
+        <div class="card">
+          <div class="line">
+            <strong>${item.title}</strong>
+            <span>-${Number(item.amount).toFixed(2)}€</span>
+          </div>
+          <div class="muted">von ${USERS[item.created_by] || "Unbekannt"}</div>
+        </div>
+      `).join("");
+    }
+
+    async function loadShopping() {
+      const { data, error } = await supabase
         .from("shopping_items")
         .select("*")
-        .eq("household_id", householdId);
+        .eq("household_id", householdId)
+        .order("created_at", { ascending: false });
 
-      const { data: chat, error: cError } = await supabaseClient
+      if (error) throw new Error("Shopping: " + error.message);
+
+      shoppingEl.innerHTML = (data || []).map(item => `
+        <div class="card">
+          <div class="line">
+            <div>
+              <strong class="${item.is_done ? "done" : ""}">${item.title}</strong>
+              <div class="muted">von ${USERS[item.added_by] || "Unbekannt"}</div>
+            </div>
+            <div class="row" style="margin:0;">
+              <button class="small-btn" onclick="toggleShopping('${item.id}', ${item.is_done ? 'false' : 'true'})">
+                ${item.is_done ? "Offen" : "Erledigt"}
+              </button>
+              <button class="small-btn" onclick="deleteShopping('${item.id}')">Löschen</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function loadChat() {
+      const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
-        .eq("household_id", householdId);
+        .eq("household_id", householdId)
+        .order("created_at", { ascending: false });
 
-      if (tError || sError || cError) {
-        document.body.innerHTML += `
-          <div style="margin-top:20px;color:#ff8080;">
-            Fehler beim Laden der Daten.<br>
-            Transactions: ${tError ? tError.message : "ok"}<br>
-            Shopping: ${sError ? sError.message : "ok"}<br>
-            Chat: ${cError ? cError.message : "ok"}
-          </div>
-        `;
+      if (error) throw new Error("Chat: " + error.message);
+
+      chatEl.innerHTML = (data || []).map(item => `
+        <div class="card">
+          <strong>${USERS[item.sender_id] || "Unbekannt"}:</strong> ${item.message}
+          <div class="muted">${new Date(item.created_at).toLocaleString("de-DE")}</div>
+        </div>
+      `).join("");
+    }
+
+    async function loadAll() {
+      setStatus("");
+      try {
+        await Promise.all([
+          loadTransactions(),
+          loadShopping(),
+          loadChat()
+        ]);
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    }
+
+    async function addTransaction() {
+      const title = transactionTitleEl.value.trim();
+      const amount = parseFloat(transactionAmountEl.value);
+
+      if (!title || Number.isNaN(amount)) {
+        setStatus("Bitte Titel und Betrag eingeben.", true);
         return;
       }
 
-      document.getElementById("transactions").innerHTML =
-        (transactions || []).map(t => `<div class="card">${t.title} - ${t.amount}€</div>`).join("");
+      const { error } = await supabase.from("transactions").insert({
+        household_id: householdId,
+        title,
+        amount,
+        type: "expense",
+        created_by: currentUserId()
+      });
 
-      document.getElementById("shopping").innerHTML =
-        (shopping || []).map(s => `<div class="card">${s.title}</div>`).join("");
+      if (error) {
+        setStatus("Ausgabe konnte nicht gespeichert werden: " + error.message, true);
+        return;
+      }
 
-      document.getElementById("chat").innerHTML =
-        (chat || []).map(c => `<div class="card">${c.message}</div>`).join("");
+      transactionTitleEl.value = "";
+      transactionAmountEl.value = "";
+      await loadTransactions();
+      setStatus("Ausgabe gespeichert.");
     }
 
-    loadData();
-  </script>
+    async function addShopping() {
+      const title = shoppingTitleEl.value.trim();
 
+      if (!title) {
+        setStatus("Bitte einen Artikel eingeben.", true);
+        return;
+      }
+
+      const { error } = await supabase.from("shopping_items").insert({
+        household_id: householdId,
+        title,
+        is_done: false,
+        added_by: currentUserId()
+      });
+
+      if (error) {
+        setStatus("Artikel konnte nicht gespeichert werden: " + error.message, true);
+        return;
+      }
+
+      shoppingTitleEl.value = "";
+      await loadShopping();
+      setStatus("Artikel hinzugefügt.");
+    }
+
+    async function sendChat() {
+      const message = chatMessageEl.value.trim();
+
+      if (!message) {
+        setStatus("Bitte eine Nachricht eingeben.", true);
+        return;
+      }
+
+      const { error } = await supabase.from("chat_messages").insert({
+        household_id: householdId,
+        sender_id: currentUserId(),
+        message
+      });
+
+      if (error) {
+        setStatus("Nachricht konnte nicht gesendet werden: " + error.message, true);
+        return;
+      }
+
+      chatMessageEl.value = "";
+      await loadChat();
+      setStatus("Nachricht gesendet.");
+    }
+
+    window.toggleShopping = async function(id, doneValue) {
+      const { error } = await supabase
+        .from("shopping_items")
+        .update({ is_done: doneValue })
+        .eq("id", id);
+
+      if (error) {
+        setStatus("Artikel konnte nicht geändert werden: " + error.message, true);
+        return;
+      }
+
+      await loadShopping();
+      setStatus("Artikel aktualisiert.");
+    };
+
+    window.deleteShopping = async function(id) {
+      const { error } = await supabase
+        .from("shopping_items")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        setStatus("Artikel konnte nicht gelöscht werden: " + error.message, true);
+        return;
+      }
+
+      await loadShopping();
+      setStatus("Artikel gelöscht.");
+    };
+
+    document.getElementById("addTransactionBtn").addEventListener("click", addTransaction);
+    document.getElementById("addShoppingBtn").addEventListener("click", addShopping);
+    document.getElementById("sendChatBtn").addEventListener("click", sendChat);
+
+    chatMessageEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendChat();
+    });
+
+    shoppingTitleEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addShopping();
+    });
+
+    transactionAmountEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addTransaction();
+    });
+
+    loadAll();
+  </script>
 </body>
 </html>
